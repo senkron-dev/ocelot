@@ -1,0 +1,43 @@
+version: 2.1
+orbs:
+  queue: eddiewebb/queue@1.5.0
+jobs:
+  build:
+    docker:
+      - image: mijitt0m/ocelot-build:0.0.3
+    steps:
+      - checkout
+      - run: make build
+  release:
+    docker:
+      - image: mijitt0m/ocelot-build:0.0.3
+    steps:
+      - checkout
+      - run: make release
+workflows:
+  version: 2
+  master:
+    jobs:
+      - queue/block_workflow:
+          time: "20"
+          only-on-branch: master
+      - release:
+          requires:
+            - queue/block_workflow
+          filters:
+            branches:
+              only: master
+  develop:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: develop
+  pr:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: 
+                - master
+                - develop
