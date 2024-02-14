@@ -59,7 +59,7 @@ namespace Ocelot.Responder.Middleware
             var statusCode = _codeMapper.Map(errors);
             _responder.SetErrorResponseOnContext(context, statusCode);
 
-            if (errors.Any(e => e.Code == OcelotErrorCode.QuotaExceededError))
+            if (errors.Any(e => e.Code == OcelotErrorCode.QuotaExceededError || e.Code == OcelotErrorCode.BlackListError))
             {
                 var downstreamResponse = context.Items.DownstreamResponse();
                 _responder.SetErrorResponseOnContext(context, downstreamResponse);

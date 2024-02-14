@@ -10,6 +10,7 @@ namespace Ocelot.Configuration.Builder
         private bool _enableGlobalRateLimiting;
         private string _clientIdHeader;
         private Func<List<string>> _getClientWhitelist;
+        private Func<List<string>> _getClientBlacklist;
         private bool _disableRateLimitHeaders;
         private string _quotaExceededMessage;
         private string _rateLimitCounterPrefix;
@@ -38,6 +39,12 @@ namespace Ocelot.Configuration.Builder
         public RateLimitOptionsBuilder WithClientWhiteList(Func<List<string>> getClientWhitelist)
         {
             _getClientWhitelist = getClientWhitelist;
+            return this;
+        }
+
+        public RateLimitOptionsBuilder WithClientBlackList(Func<List<string>> getClientBlacklist)
+        {
+            _getClientBlacklist = getClientBlacklist;
             return this;
         }
 
@@ -81,7 +88,7 @@ namespace Ocelot.Configuration.Builder
         {
             return new RateLimitOptions(_enableRateLimiting, _clientIdHeader, _getClientWhitelist,
                 _disableRateLimitHeaders, _quotaExceededMessage, _rateLimitCounterPrefix,
-                _rateLimitRule, _httpStatusCode, _getClientLimitlist, _enableGlobalRateLimiting);
+                _rateLimitRule, _httpStatusCode, _getClientLimitlist, _enableGlobalRateLimiting, _getClientBlacklist);
         }
     }
 }

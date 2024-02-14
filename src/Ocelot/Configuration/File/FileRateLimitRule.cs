@@ -9,10 +9,12 @@ namespace Ocelot.Configuration.File
         public FileRateLimitRule()
         {
             ClientWhitelist = new List<string>();
+            ClientBlacklist = new List<string>();
             ClientLimitlist = new List<ClientLimit>();
         }
 
         public List<string> ClientWhitelist { get; set; }
+        public List<string> ClientBlacklist { get; set; }
 
         /// <summary>
         /// Enables endpoint rate limiting based URL path and HTTP verb

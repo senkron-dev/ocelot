@@ -4,6 +4,7 @@
     using ServiceDiscovery.Providers;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Values;
@@ -41,9 +42,14 @@
             _timer = null;
         }
 
-        public Task<List<Service>> Get()
+        public async Task<List<Service>> Get()
         {
-            return Task.FromResult(_services);
+            if (!_services.Any())
+            {
+                _services = await _consulServiceDiscoveryProvider.Get();
+            }
+
+            return _services;
         }
 
         private async Task Poll()

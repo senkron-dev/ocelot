@@ -27,6 +27,11 @@ namespace Ocelot.Responder
                 return errors.Single(e => e.Code == OcelotErrorCode.QuotaExceededError).HttpStatusCode;
             }
 
+            if (errors.Any(e => e.Code == OcelotErrorCode.BlackListError))
+            {
+                return errors.Single(e => e.Code == OcelotErrorCode.BlackListError).HttpStatusCode;
+            }
+
             if (errors.Any(e => e.Code == OcelotErrorCode.RequestTimedOutError))
             {
                 return 503;

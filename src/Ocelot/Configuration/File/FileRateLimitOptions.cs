@@ -8,6 +8,7 @@ namespace Ocelot.Configuration.File
         {
             ClientLimitlist = new List<ClientLimit>();
             ClientWhitelist = new List<string>();
+            ClientBlacklist = new List<string>();
         }
 
         /// <summary>
@@ -60,13 +61,22 @@ namespace Ocelot.Configuration.File
         public List<ClientLimit> ClientLimitlist { get; set; }
 
         public List<string> ClientWhitelist { get; set; }
+        public List<string> ClientBlacklist { get; set; }
     }
 
     public class ClientLimit
     {
+        public ClientLimit()
+        {
+            AllowIPList = new List<string>();
+            BlockIPList = new List<string>();
+        }
+
         public string ClientId { get; set; }
         public long Limit { get; set; }
         public string Period { get; set; }
         public double PeriodTimespan { get; set; }
+        public List<string> AllowIPList { get; set; }
+        public List<string> BlockIPList { get; set; }
     }
 }

@@ -10,14 +10,16 @@ namespace Ocelot.Configuration
     public class RateLimitOptions
     {
         private readonly Func<List<string>> _getClientWhitelist;
+        private readonly Func<List<string>> _getClientBlacklist;
         private readonly Func<List<ClientLimit>> _getClientLimitlist;
 
         public RateLimitOptions(bool enableRateLimiting, string clientIdHeader, Func<List<string>> getClientWhitelist, bool disableRateLimitHeaders,
-            string quotaExceededMessage, string rateLimitCounterPrefix, RateLimitRule rateLimitRule, int httpStatusCode, Func<List<ClientLimit>> getClientLimitlist, bool enableGlobalRateLimiting)
+            string quotaExceededMessage, string rateLimitCounterPrefix, RateLimitRule rateLimitRule, int httpStatusCode, Func<List<ClientLimit>> getClientLimitlist, bool enableGlobalRateLimiting, Func<List<string>> getClientBlacklist)
         {
             EnableRateLimiting = enableRateLimiting;
             ClientIdHeader = clientIdHeader;
             _getClientWhitelist = getClientWhitelist;
+            _getClientBlacklist = getClientBlacklist;
             DisableRateLimitHeaders = disableRateLimitHeaders;
             QuotaExceededMessage = quotaExceededMessage;
             RateLimitCounterPrefix = rateLimitCounterPrefix;
@@ -33,6 +35,11 @@ namespace Ocelot.Configuration
         /// Gets the list of white listed clients
         /// </summary>
         public List<string> ClientWhitelist { get => _getClientWhitelist(); }
+
+        /// <summary>
+        /// Gets the list of balck listed clients
+        /// </summary>
+        public List<string> ClientBlacklist { get => _getClientBlacklist(); }
 
         /// <summary>
         /// Gets or sets the HTTP header that holds the client identifier, by default is X-ClientId

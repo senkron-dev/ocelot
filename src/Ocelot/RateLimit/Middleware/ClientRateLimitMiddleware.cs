@@ -45,6 +45,20 @@
             // compute identity from request
             var identity = SetIdentity(httpContext, options);
 
+            if (IsBlacklisted(identity, options))
+            {
+                Logger.LogInformation($"{downstreamRoute.DownstreamPathTemplate.Value} is black listed from rate limiting");
+                // break execution
+                var ds = ReturnBlackListResponse();
+                httpContext.Items.UpsertDownstreamResponse(ds);
+
+                // Set Error
+                httpContext.Items.SetError(new BlackListError("Api calls rejected", (int)HttpStatusCode.Forbidden));
+                //httpContext.Items.SetError(new QuotaExceededError(this.GetResponseMessage(options), options.HttpStatusCode));
+
+                return;
+            }
+
             // check white list
             if (IsWhitelisted(identity, options))
             {
@@ -59,6 +73,22 @@
             {
                 var ruleType = downstreamRoute.EnableEndpointEndpointRateLimiting ? "endpoint" : "global";
                 var routeUlr = downstreamRoute.CacheOptions.Region; // burası bize url'i veriyor. her zaman dolu
+
+                // ip kontrolu
+                if (IsNotAllowedIP(httpContext, identity, options, ruleType, routeUlr))
+                {
+                    Logger.LogInformation($"{downstreamRoute.DownstreamPathTemplate.Value} is block ip address");
+                    // break execution
+                    var ds = ReturnBlackListResponse();
+                    httpContext.Items.UpsertDownstreamResponse(ds);
+
+                    // Set Error
+                    httpContext.Items.SetError(new BlackListError("Api calls rejected", (int)HttpStatusCode.Forbidden));
+                    //httpContext.Items.SetError(new QuotaExceededError(this.GetResponseMessage(options), options.HttpStatusCode));
+
+                    return;
+                }
+
                 options.RateLimitRule = GetRateLimitRuleClientId(identity, options, ruleType, routeUlr);
                 rule = options.RateLimitRule;
             }
@@ -135,16 +165,50 @@
             return false;
         }
 
+        public bool IsNotAllowedIP(HttpContext httpContext, ClientRequestIdentity requestIdentity, RateLimitOptions option, string ruleType, string routeUrl)
+        {
+            Logger.LogInformation($"Remote IP: {httpContext.Connection.RemoteIpAddress.ToString()}");
+
+            var clientLimit = GetClientLimit(requestIdentity, option, ruleType, routeUrl);
+            if (clientLimit != null)
+            {
+                if (clientLimit.BlockIPList.Any())
+                {
+                    // bloklanmis ip listesinde ise true doner
+                    return clientLimit.BlockIPList.Contains(httpContext.Connection.RemoteIpAddress.ToString());
+                }
+
+                if (clientLimit.AllowIPList.Any())
+                {
+                    // izin verilen ip listesinde degil ise true doner
+                    return !clientLimit.AllowIPList.Contains(httpContext.Connection.RemoteIpAddress.ToString());
+                }
+            }
+
+            return false;
+        }
+
         public RateLimitRule GetRateLimitRuleClientId(ClientRequestIdentity requestIdentity, RateLimitOptions option, string ruleType, string routeUrl)
         {
+            var clientLimit = GetClientLimit(requestIdentity, option, ruleType, routeUrl);
+            if (clientLimit != null)
+            {
+                return new RateLimitRule(clientLimit.Period, clientLimit.PeriodTimespan, clientLimit.Limit);
+            }
+
+            return option.RateLimitRule;
+        }
+
+        private ClientLimit GetClientLimit(ClientRequestIdentity requestIdentity, RateLimitOptions option, string ruleType, string routeUrl)
+        {
             var key = ruleType == "global"
-               ? $"{ruleType}_{requestIdentity.ClientId}"
-               : $"{ruleType}_{routeUrl}_{requestIdentity.ClientId}";
+              ? $"{ruleType}_{requestIdentity.ClientId}"
+              : $"{ruleType}_{routeUrl}_{requestIdentity.ClientId}";
 
             if (ClientLimits.ContainsKey(key))
             {
                 ClientLimits.TryGetValue(key, out var clientLimit);
-                return new RateLimitRule(clientLimit.Period, clientLimit.PeriodTimespan, clientLimit.Limit);
+                return clientLimit;
             }
             else
             {
@@ -152,10 +216,10 @@
                 if (item != null)
                 {
                     ClientLimits.Add(key, item);
-                    return new RateLimitRule(item.Period, item.PeriodTimespan, item.Limit);
+                    return item;
                 }
 
-                return option.RateLimitRule;
+                return null;
             }
         }
 
